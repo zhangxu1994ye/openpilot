@@ -78,7 +78,7 @@ class TestCarModelBase(unittest.TestCase):
     cls.elm_frame = None
     cls.car_safety_mode_frame = None
     cls.fingerprint = gen_empty_fingerprint()
-    experimental_long = False
+    alpha_long = False
     for msg in lr:
       if msg.which() == "can":
         can = can_capnp_to_list((msg.as_builder().to_bytes(),))[0]
@@ -91,7 +91,7 @@ class TestCarModelBase(unittest.TestCase):
       elif msg.which() == "carParams":
         car_fw = msg.carParams.carFw
         if msg.carParams.openpilotLongitudinalControl:
-          experimental_long = True
+          alpha_long = True
         if cls.platform is None:
           live_fingerprint = msg.carParams.carFingerprint
           cls.platform = MIGRATION.get(live_fingerprint, live_fingerprint)
@@ -113,7 +113,7 @@ class TestCarModelBase(unittest.TestCase):
           cls.car_safety_mode_frame = len(can_msgs)
 
     assert len(can_msgs) > int(50 / DT_CTRL), "no can data found"
-    return car_fw, can_msgs, experimental_long
+    return car_fw, can_msgs, alpha_long
 
   @classmethod
   def get_testing_data(cls):
@@ -146,13 +146,13 @@ class TestCarModelBase(unittest.TestCase):
         raise unittest.SkipTest
       raise Exception(f"missing test route for {cls.platform}")
 
-    car_fw, cls.can_msgs, experimental_long = cls.get_testing_data()
+    car_fw, cls.can_msgs, alpha_long = cls.get_testing_data()
 
     # if relay is expected to be open in the route
     cls.openpilot_enabled = cls.car_safety_mode_frame is not None
 
-    cls.CarInterface, cls.CarController, cls.CarState, cls.RadarInterface = interfaces[cls.platform]
-    cls.CP = cls.CarInterface.get_params(cls.platform,  cls.fingerprint, car_fw, experimental_long, docs=False)
+    cls.CarInterface = interfaces[cls.platform]
+    cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, False, docs=False)
     assert cls.CP
     assert cls.CP.carFingerprint == cls.platform
 
@@ -163,7 +163,7 @@ class TestCarModelBase(unittest.TestCase):
     del cls.can_msgs
 
   def setUp(self):
-    self.CI = self.CarInterface(self.CP.copy(), self.CarController, self.CarState)
+    self.CI = self.CarInterface(self.CP.copy())
     assert self.CI
 
     # TODO: check safetyModel is in release panda build
@@ -210,7 +210,7 @@ class TestCarModelBase(unittest.TestCase):
     self.assertEqual(can_invalid_cnt, 0)
 
   def test_radar_interface(self):
-    RI = self.RadarInterface(self.CP)
+    RI = self.CarInterface.RadarInterface(self.CP)
     assert RI
 
     # Since OBD port is multiplexed to bus 1 (commonly radar bus) while fingerprinting,
@@ -219,7 +219,7 @@ class TestCarModelBase(unittest.TestCase):
     for i, msg in enumerate(self.can_msgs[self.elm_frame:]):
       rr: structs.RadarData | None = RI.update(msg)
       if rr is not None and i > 50:
-        error_cnt += structs.RadarData.Error.canError in rr.errors
+        error_cnt += rr.errors.canError
     self.assertEqual(error_cnt, 0)
 
   def test_panda_safety_rx_checks(self):
@@ -273,7 +273,7 @@ class TestCarModelBase(unittest.TestCase):
     def test_car_controller(car_control):
       now_nanos = 0
       msgs_sent = 0
-      CI = self.CarInterface(self.CP, self.CarController, self.CarState)
+      CI = self.CarInterface(self.CP)
       for _ in range(round(10.0 / DT_CTRL)):  # make sure we hit the slowest messages
         CI.update([])
         _, sendcan = CI.apply(car_control, now_nanos)
@@ -330,6 +330,7 @@ class TestCarModelBase(unittest.TestCase):
       prev_panda_gas = self.safety.get_gas_pressed_prev()
       prev_panda_brake = self.safety.get_brake_pressed_prev()
       prev_panda_regen_braking = self.safety.get_regen_braking_prev()
+      prev_panda_steering_disengage = self.safety.get_steering_disengage_prev()
       prev_panda_vehicle_moving = self.safety.get_vehicle_moving()
       prev_panda_vehicle_speed_min = self.safety.get_vehicle_speed_min()
       prev_panda_vehicle_speed_max = self.safety.get_vehicle_speed_max()
@@ -356,6 +357,9 @@ class TestCarModelBase(unittest.TestCase):
 
       if self.safety.get_regen_braking_prev() != prev_panda_regen_braking:
         self.assertEqual(CS.regenBraking, self.safety.get_regen_braking_prev())
+
+      if self.safety.get_steering_disengage_prev() != prev_panda_steering_disengage:
+        self.assertEqual(CS.steeringDisengage, self.safety.get_steering_disengage_prev())
 
       if self.safety.get_vehicle_moving() != prev_panda_vehicle_moving:
         self.assertEqual(not CS.standstill, self.safety.get_vehicle_moving())
@@ -432,6 +436,7 @@ class TestCarModelBase(unittest.TestCase):
           brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
       checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
+      checks['steeringDisengage'] += CS.steeringDisengage != self.safety.get_steering_disengage_prev()
 
       if self.CP.pcmCruise:
         # On most pcmCruise cars, openpilot's state is always tied to the PCM's cruise state.
