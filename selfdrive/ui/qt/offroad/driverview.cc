@@ -1,6 +1,7 @@
 #include "selfdrive/ui/qt/offroad/driverview.h"
 
 #include <algorithm>
+#include <cmath>
 #include <QPainter>
 
 #include "selfdrive/ui/qt/util.h"
@@ -10,11 +11,11 @@ const int FACE_IMG_SIZE = 130;
 DriverViewWindow::DriverViewWindow(QWidget* parent) : CameraWidget("camerad", VISION_STREAM_DRIVER, true, parent) {
   face_img = loadPixmap("../assets/img_driver_face_static.png", {FACE_IMG_SIZE, FACE_IMG_SIZE});
   QObject::connect(this, &CameraWidget::clicked, this, &DriverViewWindow::done);
-  QObject::connect(device(), &Device::interactiveTimeout, this, [this]() {
-    if (isVisible()) {
-      emit done();
-    }
-  });
+  // QObject::connect(device(), &Device::interactiveTimeout, this, [this]() {
+  //   if (isVisible()) {
+  //     emit done();
+  //   }
+  // });
 }
 
 void DriverViewWindow::showEvent(QShowEvent* event) {
@@ -121,13 +122,20 @@ void DriverViewWindow::paintGL() {
 
   auto face_orient = driver_data.getFaceOrientation();
   if (face_orient.size() >= 3) {
-    p.drawText(10, text_y, QString("Face Orient （面部朝向）: (%1, %2, %3)").arg(face_orient[0], 0, 'f', 3).arg(face_orient[1], 0, 'f', 3).arg(face_orient[2], 0, 'f', 3));
+    // Convert from radians to degrees
+    float pitch_deg = face_orient[0] * 180.0 / M_PI;
+    float yaw_deg = face_orient[1] * 180.0 / M_PI;
+    float roll_deg = face_orient[2] * 180.0 / M_PI;
+    p.drawText(10, text_y, QString("Face Orient （面部朝向角度）: (%1°, %2°, %3°)").arg(pitch_deg, 0, 'f', 1).arg(yaw_deg, 0, 'f', 1).arg(roll_deg, 0, 'f', 1));
     text_y += line_height;
   }
 
   auto face_orient_std = driver_data.getFaceOrientationStd();
   if (face_orient_std.size() >= 3) {
-    p.drawText(10, text_y, QString("Face Orient Std （面部朝向标准差）: (%1, %2, %3)").arg(face_orient_std[0], 0, 'f', 3).arg(face_orient_std[1], 0, 'f', 3).arg(face_orient_std[2], 0, 'f', 3));
+    float pitch_deg = face_orient[0] * 180.0 / M_PI;
+    float yaw_deg = face_orient[1] * 180.0 / M_PI;
+    float roll_deg = face_orient[2] * 180.0 / M_PI;
+    p.drawText(10, text_y, QString("Face Orient Std （面部朝向角度标准差）: (%1°, %2°, %3°)").arg(pitch_deg, 0, 'f', 3).arg(yaw_deg, 0, 'f', 3).arg(roll_deg, 0, 'f', 3));
     text_y += line_height;
   }
 
