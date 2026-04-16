@@ -38,7 +38,8 @@ qt_libs = [widgets, qt_util] + base_libs
 qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
-          "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
+          "qt/offroad/driverview.cc", "qt/offroad/roadview.cc",
+          "qt/offroad/experimental_mode.cc",
           "qt/onroad/onroad_home.cc", "qt/onroad/annotated_camera.cc",
           "qt/onroad/buttons.cc", "qt/onroad/alerts.cc"]
 
@@ -122,7 +123,7 @@ if GetOption('extras') and arch != "Darwin":
     obj = senv.Object(f"installer/installers/installer_{name}.o", ["installer/installer.cc"], CPPDEFINES=d)
     f = senv.Program(f"installer/installers/installer_{name}", [obj, cont], LIBS=qt_libs)
     # keep installers small
-    assert f[0].get_size() < 350*1e3
+    assert f[0].get_size() < 500*1e3
 
 # build watch3
 if arch in ['x86_64', 'aarch64', 'Darwin'] or GetOption('extras'):

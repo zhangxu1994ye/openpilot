@@ -221,6 +221,11 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(dcamBtn, &ButtonControl::clicked, [=]() { emit showDriverView(); });
   addItem(dcamBtn);
 
+  auto rcamBtn = new ButtonControl(tr("Road Camera"), tr("PREVIEW"),
+                                   tr("Preview the road camera with annotations. (vehicle must be off)"));
+  connect(rcamBtn, &ButtonControl::clicked, [=]() { emit showRoadView(); });
+  addItem(rcamBtn);
+
   auto resetCalibBtn = new ButtonControl(tr("Reset Calibration"), tr("RESET"), "");
   connect(resetCalibBtn, &ButtonControl::showDescriptionEvent, this, &DevicePanel::updateCalibDescription);
   connect(resetCalibBtn, &ButtonControl::clicked, [&]() {

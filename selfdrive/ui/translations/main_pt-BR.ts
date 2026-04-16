@@ -305,6 +305,14 @@
         <source>PAIR</source>
         <translation>PAREAR</translation>
     </message>
+    <message>
+        <source>Road Camera</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preview the road camera with annotations. (vehicle must be off)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DriverViewWindow</name>

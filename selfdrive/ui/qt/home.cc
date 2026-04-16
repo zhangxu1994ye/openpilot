@@ -43,6 +43,12 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
     showDriverView(false);
   });
   slayout->addWidget(driver_view);
+
+  road_view = new RoadViewWindow(this);
+  connect(road_view, &RoadViewWindow::done, [=] {
+    showRoadView(false);
+  });
+  slayout->addWidget(road_view);
   setAttribute(Qt::WA_NoSystemBackground);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &HomeWindow::updateState);
   QObject::connect(uiState(), &UIState::offroadTransition, this, &HomeWindow::offroadTransition);
@@ -81,6 +87,16 @@ void HomeWindow::showDriverView(bool show) {
   if (show) {
     emit closeSettings();
     slayout->setCurrentWidget(driver_view);
+  } else {
+    slayout->setCurrentWidget(home);
+  }
+  sidebar->setVisible(show == false);
+}
+
+void HomeWindow::showRoadView(bool show) {
+  if (show) {
+    emit closeSettings();
+    slayout->setCurrentWidget(road_view);
   } else {
     slayout->setCurrentWidget(home);
   }

@@ -23,6 +23,9 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
   QObject::connect(settingsWindow, &SettingsWindow::showDriverView, [=] {
     homeWindow->showDriverView(true);
   });
+  QObject::connect(settingsWindow, &SettingsWindow::showRoadView, [=] {
+    homeWindow->showRoadView(true);
+  });
 
   onboardingWindow = new OnboardingWindow(this);
   main_layout->addWidget(onboardingWindow);

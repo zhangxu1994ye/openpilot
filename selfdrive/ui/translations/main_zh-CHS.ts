@@ -182,12 +182,20 @@
         <translation>驾驶员摄像头</translation>
     </message>
     <message>
+        <source>Road Camera</source>
+        <translation>道路摄像头</translation>
+    </message>
+    <message>
         <source>PREVIEW</source>
         <translation>预览</translation>
     </message>
     <message>
         <source>Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)</source>
         <translation>打开并预览驾驶员摄像头，以确保驾驶员监控具有良好视野。（仅熄火时可用）</translation>
+    </message>
+    <message>
+        <source>Preview the road camera with annotations. (vehicle must be off)</source>
+        <translation>打开并预览道路摄像头，以确保道路监控具有良好视野。（仅熄火时可用）</translation>
     </message>
     <message>
         <source>Reset Calibration</source>
@@ -540,7 +548,7 @@
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
-        <translation>现在升级</translation>
+        <translation>现在升级1</translation>
     </message>
     <message>
         <source>Become a comma prime member at connect.comma.ai</source>

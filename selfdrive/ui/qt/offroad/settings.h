@@ -29,6 +29,7 @@ signals:
   void closeSettings();
   void reviewTrainingGuide();
   void showDriverView();
+  void showRoadView();
   void expandToggleDescription(const QString &param);
 
 private:
@@ -47,6 +48,7 @@ public:
 signals:
   void reviewTrainingGuide();
   void showDriverView();
+  void showRoadView();
 
 private slots:
   void poweroff();

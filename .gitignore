@@ -83,3 +83,6 @@ build/
 
 poetry.toml
 Pipfile
+
+_*
+wanted
