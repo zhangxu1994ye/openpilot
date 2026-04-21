@@ -82,6 +82,9 @@ cabana_libs = [cereal, messaging, visionipc, replay_lib, 'avformat', 'avcodec', 
 opendbc_path = '-DOPENDBC_FILE_PATH=\'"%s"\'' % (cabana_env.Dir("../../opendbc/dbc").abspath)
 cabana_env['CXXFLAGS'] += [opendbc_path]
 
+if arch == "x86_64":
+  cabana_libs += ['va', 'va-drm', 'drm']
+
 # build assets
 assets = "assets/assets.cc"
 assets_src = "assets/assets.qrc"
