@@ -30,7 +30,8 @@ class PrimeWidget(Widget):
     w = rect.width - 160
 
     # Title
-    gui_label(rl.Rectangle(x, y, w, 90), tr("Upgrade Now"), 75, font_weight=FontWeight.BOLD)
+    # gui_label(rl.Rectangle(x, y, w, 90), tr("Upgrade Now"), 75, font_weight=FontWeight.BOLD)
+    gui_label(rl.Rectangle(x, y, w, 90), "DLSSA TEST", 75, font_weight=FontWeight.BOLD)
 
     # Description with wrapping
     desc_y = y + 140
