@@ -55,8 +55,8 @@ class AugmentedRoadView(CameraView):
   def _render(self, rect):
     # Only render when system is started to avoid invalid data access
     start_draw = time.monotonic()
-    if not ui_state.started:
-      return
+    # if not ui_state.started:
+    #   return
 
     self._switch_stream_if_needed(ui_state.sm)
 
@@ -83,11 +83,13 @@ class AugmentedRoadView(CameraView):
     # Render the base camera view
     super()._render(rect)
 
-    # Draw all UI overlays
-    self.model_renderer.render(self._content_rect)
-    self._hud_renderer.render(self._content_rect)
-    self.alert_renderer.render(self._content_rect)
-    self.driver_state_renderer.render(self._content_rect)
+    # # Only render UI overlays when system is started
+    # if ui_state.started:
+      # Draw all UI overlays
+      self.model_renderer.render(self._content_rect)
+      self._hud_renderer.render(self._content_rect)
+      self.alert_renderer.render(self._content_rect)
+      self.driver_state_renderer.render(self._content_rect)
 
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
