@@ -141,6 +141,7 @@ class UIState:
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
+    self.camera_preview = self.params.get_bool("EnableCameraPreview")
 
   def _update_status(self) -> None:
     if self.started and self.sm.updated["selfdriveState"]:

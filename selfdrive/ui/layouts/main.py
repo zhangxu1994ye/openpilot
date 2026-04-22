@@ -65,13 +65,16 @@ class MainLayout(Widget):
     self._content_rect = rl.Rectangle(self._rect.x + x_offset, self._rect.y, self._rect.width - x_offset, self._rect.height)
 
   def _handle_onroad_transition(self):
-    if ui_state.started != self._prev_onroad:
-      self._prev_onroad = ui_state.started
-
+    show_camera = ui_state.started or ui_state.camera_preview
+    if show_camera != self._prev_onroad:
+      self._prev_onroad = show_camera
       self._set_mode_for_state()
 
   def _set_mode_for_state(self):
-    if ui_state.started:
+    # Check if should show camera preview (either onroad or camera_preview enabled)
+    show_camera = ui_state.started or ui_state.camera_preview
+    
+    if show_camera:
       # Don't hide sidebar from interactive timeout
       if self._current_mode != MainState.ONROAD:
         self._sidebar.set_visible(False)
