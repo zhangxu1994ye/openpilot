@@ -122,7 +122,7 @@ class AugmentedRoadView(CameraView):
     rl.draw_rectangle_rounded_lines_ex(border_rect, border_roundness, 10, UI_BORDER_SIZE, border_color)
 
   def _switch_stream_if_needed(self, sm):
-    if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:
+    if WIDE_CAM in self.available_streams:
       v_ego = ui_state.v_ego_override
       if v_ego < WIDE_CAM_MAX_SPEED:
         target = WIDE_CAM
