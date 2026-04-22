@@ -91,13 +91,16 @@ class Sidebar(Widget):
     self._on_flag_click: Callable | None = None
     self._open_settings_callback: Callable | None = None
     self._on_metric_click: Callable | None = None  # Callback for metric click (TEMP/VEHICLE)
+    self._on_connect_metric_click: Callable | None = None  # Callback for connect metric click
 
   def set_callbacks(self, on_settings: Callable | None = None, on_flag: Callable | None = None,
-                    open_settings: Callable | None = None, on_metric_click: Callable | None = None):
+                    open_settings: Callable | None = None, on_metric_click: Callable | None = None,
+                    on_connect_metric_click: Callable | None = None):
     self._on_settings_click = on_settings
     self._on_flag_click = on_flag
     self._open_settings_callback = open_settings
     self._on_metric_click = on_metric_click
+    self._on_connect_metric_click = on_connect_metric_click
 
   def _render(self, rect: rl.Rectangle):
     # Background
@@ -160,10 +163,13 @@ class Sidebar(Widget):
     elif self._recording_audio and rl.check_collision_point_rec(mouse_pos, self._mic_indicator_rect):
       if self._open_settings_callback:
         self._open_settings_callback()
-    elif (rl.check_collision_point_rec(mouse_pos, self._temp_metric_rect) or 
+    elif (rl.check_collision_point_rec(mouse_pos, self._temp_metric_rect) or
           rl.check_collision_point_rec(mouse_pos, self._panda_metric_rect)):
       if self._on_metric_click:
         self._on_metric_click()
+    elif rl.check_collision_point_rec(mouse_pos, self._connect_metric_rect):
+      if self._on_connect_metric_click:
+        self._on_connect_metric_click()
 
   def _draw_buttons(self, rect: rl.Rectangle):
     mouse_pos = rl.get_mouse_position()
