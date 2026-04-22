@@ -82,11 +82,21 @@ class UIState:
     self.camera_preview: bool = self.params.get_bool("EnableCameraPreview")
     self._param_update_time: float = 0.0
 
+    # vEgo override for camera/speed simulation (default 0.0, toggle between 0.0 and 20.0)
+    self.v_ego_override: float = 0.0
+
     # Callbacks
     self._offroad_transition_callbacks: list[Callable[[], None]] = []
     self._engaged_transition_callbacks: list[Callable[[], None]] = []
 
     self.update_params()
+
+  def toggle_v_ego_override(self):
+    """Toggle v_ego between 0.0 and 20.0 m/s for camera/speed simulation."""
+    if self.v_ego_override == 0.0:
+      self.v_ego_override = 20.0
+    else:
+      self.v_ego_override = 0.0
 
   def add_offroad_transition_callback(self, callback: Callable[[], None]):
     self._offroad_transition_callbacks.append(callback)
