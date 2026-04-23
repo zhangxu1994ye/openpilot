@@ -85,9 +85,13 @@ class UIState:
     # vEgo override for camera/speed simulation (default 0.0, toggle between 0.0 and 20.0)
     self.v_ego_override: float = 0.0
 
+    # Camera save trigger via params (for remote/shell trigger)
+    self._last_save_trigger: str | None = None
+
     # Callbacks
     self._offroad_transition_callbacks: list[Callable[[], None]] = []
     self._engaged_transition_callbacks: list[Callable[[], None]] = []
+    self._save_camera_frame_callbacks: list[Callable[[], None]] = []
 
     self.update_params()
 
@@ -103,6 +107,13 @@ class UIState:
 
   def add_engaged_transition_callback(self, callback: Callable[[], None]):
     self._engaged_transition_callbacks.append(callback)
+
+  def add_save_camera_frame_callback(self, callback: Callable[[], None]):
+    self._save_camera_frame_callbacks.append(callback)
+
+  def trigger_save_camera_frame(self):
+    for callback in self._save_camera_frame_callbacks:
+      callback()
 
   @property
   def engaged(self) -> bool:
@@ -153,6 +164,14 @@ class UIState:
     self.is_metric = self.params.get_bool("IsMetric")
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
     self.camera_preview = self.params.get_bool("EnableCameraPreview")
+
+    # Check for camera save trigger (remote trigger via shell)
+    save_trigger_bytes = self.params.get("SaveCameraFrameTrigger")
+    if save_trigger_bytes is not None:
+      save_trigger = save_trigger_bytes.decode('utf-8', errors='replace')
+      if save_trigger != self._last_save_trigger:
+        self._last_save_trigger = save_trigger
+        self.trigger_save_camera_frame()
 
   def _update_status(self) -> None:
     if self.started and self.sm.updated["selfdriveState"]:

@@ -217,8 +217,8 @@ class Sidebar(Widget):
     rl.draw_text_ex(self._font_regular, tr(self._net_type), text_pos, FONT_SIZE, 0, Colors.WHITE)
 
   def _draw_metrics(self, rect: rl.Rectangle):
-    metrics = [(self._temp_status, 338, self._temp_metric_rect), 
-               (self._panda_status, 496, self._panda_metric_rect), 
+    metrics = [(self._temp_status, 338, self._temp_metric_rect),
+               (self._panda_status, 496, self._panda_metric_rect),
                (self._connect_status, 654, self._connect_metric_rect)]
 
     for metric, y_offset, metric_rect in metrics:

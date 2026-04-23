@@ -1,5 +1,7 @@
 import os
 import time
+import socket
+import threading
 import pyray as rl
 import numpy as np
 from PIL import Image
@@ -15,6 +17,10 @@ from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.layouts.onboarding import OnboardingWindow
 from openpilot.common.swaglog import cloudlog
+
+
+CAMERA_SAVE_SOCKET = "/tmp/camera_save_trigger.sock"
+CAMERA_SAVE_PORT = 8357
 
 
 class MainState(IntEnum):
@@ -39,6 +45,11 @@ class MainLayout(Widget):
     self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)
     self._content_rect = rl.Rectangle(0, 0, 0, 0)
 
+    # Start socket server for remote trigger
+    self._socket_server_thread: threading.Thread | None = None
+    self._socket_running = False
+    self._start_socket_server()
+
     # Set callbacks
     self._setup_callbacks()
 
@@ -49,11 +60,92 @@ class MainLayout(Widget):
     if not self._onboarding_window.completed:
       gui_app.push_widget(self._onboarding_window)
 
+  def _start_socket_server(self):
+    if self._socket_server_thread is not None and self._socket_server_thread.is_alive():
+      return
+
+    self._socket_running = True
+    self._socket_server_thread = threading.Thread(target=self._socket_server_loop, daemon=True)
+    self._socket_server_thread.start()
+
+  def _handle_trigger(self):
+    cloudlog.debug("Received SAVE_FRAME trigger")
+    ui_state.trigger_save_camera_frame()
+
+  def _socket_server_loop(self):
+    # Cleanup existing socket
+    if os.path.exists(CAMERA_SAVE_SOCKET):
+      try:
+        os.unlink(CAMERA_SAVE_SOCKET)
+      except OSError:
+        pass
+
+    # Setup Unix socket
+    unix_server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    unix_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    unix_server.bind(CAMERA_SAVE_SOCKET)
+    unix_server.listen(5)
+    os.chmod(CAMERA_SAVE_SOCKET, 0o666)
+
+    # Setup TCP socket
+    tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    tcp_server.bind(("0.0.0.0", CAMERA_SAVE_PORT))
+    tcp_server.listen(5)
+    tcp_server.settimeout(0.5)
+
+    unix_server.settimeout(0.5)
+
+    try:
+      while self._socket_running:
+        # Check Unix socket
+        try:
+          conn, _ = unix_server.accept()
+          try:
+            data = conn.recv(1024)
+            if data == b"SAVE_FRAME\n":
+              self._handle_trigger()
+              conn.sendall(b"OK\n")
+            else:
+              conn.sendall(b"INVALID\n")
+          except socket.error:
+            pass
+          finally:
+            conn.close()
+        except socket.timeout:
+          pass
+
+        # Check TCP socket
+        try:
+          conn, _ = tcp_server.accept()
+          try:
+            data = conn.recv(1024)
+            if data == b"SAVE_FRAME\n":
+              self._handle_trigger()
+              conn.sendall(b"OK\n")
+            else:
+              conn.sendall(b"INVALID\n")
+          except socket.error:
+            pass
+          finally:
+            conn.close()
+        except socket.timeout:
+          pass
+    finally:
+      unix_server.close()
+      tcp_server.close()
+      if os.path.exists(CAMERA_SAVE_SOCKET):
+        try:
+          os.unlink(CAMERA_SAVE_SOCKET)
+        except OSError:
+          pass
+
   def _render(self, _):
     self._handle_onroad_transition()
     self._render_main_content()
 
   def _setup_callbacks(self):
+    ui_state.add_save_camera_frame_callback(self._save_camera_frame)
     self._sidebar.set_callbacks(on_settings=self._on_settings_clicked,
                                 on_flag=self._on_bookmark_clicked,
                                 open_settings=lambda: self.open_settings(PanelType.TOGGLES),
@@ -70,6 +162,9 @@ class MainLayout(Widget):
     ui_state.toggle_v_ego_override()
 
   def _on_connect_metric_clicked(self):
+    ui_state.trigger_save_camera_frame()
+
+  def _save_camera_frame(self):
     CAM_SAVE_DIR = "/data/myCam"
     os.makedirs(CAM_SAVE_DIR, exist_ok=True)
     timestamp = int(time.time() * 1000)
