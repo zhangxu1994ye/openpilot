@@ -142,6 +142,8 @@ class MainLayout(Widget):
 
   def _render(self, _):
     self._handle_onroad_transition()
+    if ui_state.consume_save_camera_frame_pending():
+      self._save_camera_frame()
     self._render_main_content()
 
   def _setup_callbacks(self):
@@ -156,7 +158,7 @@ class MainLayout(Widget):
     self._layouts[MainState.HOME].set_settings_callback(lambda: self.open_settings(PanelType.TOGGLES))
     self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._set_mode_for_state)
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
-    device.add_interactive_timeout_callback(self._set_mode_for_state)
+    # device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _on_metric_clicked(self):
     ui_state.toggle_v_ego_override()
@@ -218,7 +220,7 @@ class MainLayout(Widget):
   def _set_mode_for_state(self):
     # Check if should show camera preview (either onroad or camera_preview enabled)
     show_camera = ui_state.started or ui_state.camera_preview
-    
+
     if show_camera:
       # Don't hide sidebar from interactive timeout
       if self._current_mode != MainState.ONROAD:

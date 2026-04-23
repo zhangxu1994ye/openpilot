@@ -87,6 +87,7 @@ class UIState:
 
     # Camera save trigger via params (for remote/shell trigger)
     self._last_save_trigger: str | None = None
+    self._save_camera_frame_pending: bool = False
 
     # Callbacks
     self._offroad_transition_callbacks: list[Callable[[], None]] = []
@@ -112,8 +113,13 @@ class UIState:
     self._save_camera_frame_callbacks.append(callback)
 
   def trigger_save_camera_frame(self):
-    for callback in self._save_camera_frame_callbacks:
-      callback()
+    self._save_camera_frame_pending = True
+
+  def consume_save_camera_frame_pending(self) -> bool:
+    if self._save_camera_frame_pending:
+      self._save_camera_frame_pending = False
+      return True
+    return False
 
   @property
   def engaged(self) -> bool:
