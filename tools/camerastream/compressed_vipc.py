@@ -112,8 +112,12 @@ class CompressedVipc:
     os.environ["ZMQ"] = "1"
     messaging.reset_context()
     sm = messaging.SubMaster([ENCODE_SOCKETS[s] for s in vision_streams], addr=addr)
+    print(111)
+
     while min(sm.recv_frame.values()) == 0:
+      print(f"waiting for first frame, the sm.recv_frame.values() is {sm.recv_frame.values()}")
       sm.update(100)
+    print(222)
     os.environ.pop("ZMQ")
     messaging.reset_context()
 
@@ -123,9 +127,12 @@ class CompressedVipc:
       self.vipc_server.create_buffers(vst, 4, ed.width, ed.height)
     self.vipc_server.start_listener()
 
+    print("start decoders")
+
     self.procs = []
     for vst in vision_streams:
       ed = sm[ENCODE_SOCKETS[vst]]
+      print(f"start decoder for {sock_name}, {ed.width}x{ed.height}")
       p = multiprocessing.Process(target=decoder, args=(addr, self.vipc_server, vst, nvidia, ed.width, ed.height, debug))
       p.start()
       self.procs.append(p)
