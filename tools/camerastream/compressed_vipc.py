@@ -7,12 +7,89 @@ import numpy as np
 import multiprocessing
 import time
 import signal
+import zmq
 
-
-import cereal.messaging as messaging
+import capnp
+from cereal import log
 from msgq.visionipc import VisionIpcServer, VisionStreamType
 
 V4L2_BUF_FLAG_KEYFRAME = 8
+
+
+def fnv1a_hash(s: str) -> int:
+  """FNV-1a hash function matching bridge_zmq.cc"""
+  h = 0xcbf29ce484222325
+  for c in s.encode():
+    h ^= c
+    h = (h * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+  return h
+
+
+def get_port(endpoint: str) -> int:
+  """Calculate port number from endpoint name, matching bridge_zmq.cc"""
+  return 8023 + (fnv1a_hash(endpoint) % (65535 - 8023))
+
+
+class ZmqSubSocket:
+  """ZMQ subscriber socket matching BridgeZmqSubSocket from bridge_zmq.cc"""
+
+  def __init__(self, endpoint: str, address: str, conflate: bool = False):
+    self.ctx = zmq.Context()
+    self.sock = self.ctx.socket(zmq.SUB)
+    self.sock.setsockopt(zmq.SUBSCRIBE, b"")
+
+    if conflate:
+      self.sock.setsockopt(zmq.CONFLATE, 1)
+
+    reconnect_ivl = 500
+    self.sock.setsockopt(zmq.RECONNECT_IVL_MAX, reconnect_ivl)
+
+    port = get_port(endpoint)
+    self.endpoint = f"tcp://{address}:{port}"
+    self.sock.connect(self.endpoint)
+
+  def set_timeout(self, timeout_ms: int):
+    self.sock.setsockopt(zmq.RCVTIMEO, timeout_ms)
+
+  def recv(self, non_blocking: bool = False) -> bytes:
+    flags = zmq.NOBLOCK if non_blocking else 0
+    try:
+      return self.sock.recv(flags=flags)
+    except zmq.Again:
+      return None
+
+  def __del__(self):
+    self.sock.close()
+    self.ctx.term()
+
+
+class ZmqPoller:
+  """ZMQ poller matching BridgeZmqPoller from bridge_zmq.cc"""
+
+  def __init__(self):
+    self.socks = []
+
+  def register(self, sock: ZmqSubSocket):
+    self.socks.append(sock)
+
+  def poll(self, timeout_ms: int):
+    """Poll registered sockets, return list of sockets with events"""
+    items = [sock.sock for sock in self.socks]
+    if not items:
+      return []
+
+   zmq_poller = zmq.Poller()
+    for s in items:
+      zmq_poller.register(s, zmq.POLLIN)
+
+    result = zmq_poller.poll(timeout_ms)
+    ready_socks = []
+    for s, _ in result:
+      for sock in self.socks:
+        if sock.sock == s:
+          ready_socks.append(sock)
+          break
+    return ready_socks
 
 # start encoderd
 # also start cereal messaging bridge
